@@ -1,5 +1,11 @@
 # zhnum
 
+![Python](https://img.shields.io/badge/python-3.8%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Tests](https://img.shields.io/badge/tests-17%20passing-success)
+![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
+
 零依赖的中文数字转换库 —— 整数 ↔ 中文小写 / 大写 / 人民币金额双向转换。
 
 - **读法规范**：10~19 读「十」「十一」而非「一十」；中间零合并（100000001 → 一亿零一）
@@ -59,6 +65,18 @@ from_cn("壹亿零一")   # 100000001
 ```bash
 python -m unittest discover -s tests
 # Ran 17 tests ... OK
+```
+
+
+## 📁 项目结构
+
+```
+zhnum/
+├── LICENSE
+├── pyproject.toml
+├── tests/
+├── zhnum/
+└── README.md
 ```
 
 ## License
