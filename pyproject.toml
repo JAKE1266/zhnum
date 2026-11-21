@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zhnum"
+version = "0.1.0"
+description = "零依赖中文数字转换库：小写/大写/人民币金额双向转换，往返一致"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["chinese number", "人民币大写", "中文数字"]
+
+[project.scripts]
+zhnum = "zhnum.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["zhnum*"]
