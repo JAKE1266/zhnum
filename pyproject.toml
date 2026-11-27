@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "zhnum"
-version = "0.1.0"
+version = "0.1.1"
 description = "零依赖中文数字转换库：小写/大写/人民币金额双向转换，往返一致"
 readme = "README.md"
 requires-python = ">=3.8"

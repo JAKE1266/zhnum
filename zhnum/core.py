@@ -7,6 +7,8 @@
 """
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+
 _DIGITS_CN = "零一二三四五六七八九"
 _DIGITS_CAP = "零壹贰叁肆伍陆柒捌玖"
 _UNITS = ("", "十", "百", "千")
@@ -97,11 +99,20 @@ def to_amount(amount, capital: bool = True) -> str:
     规则：角分全为零时末尾加「整」；角为零分不为零时读「零X分」。
     ``capital=False`` 返回小写（一二三…）版本。
     """
-    amount = round(float(amount), 2)
+    try:
+        amount = Decimal(str(amount))
+    except (InvalidOperation, ValueError):
+        raise ZhNumError(f"无效金额：{amount!r}") from None
+    if not amount.is_finite():
+        raise ZhNumError("金额必须为有限数字")
+    try:
+        amount = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    except InvalidOperation:
+        raise ZhNumError("金额超出可转换范围") from None
     if amount < 0:
         return "负" + to_amount(-amount, capital)
     yuan = int(amount)
-    cents = int(round((amount - yuan) * 100))
+    cents = int((amount - yuan) * 100)
     jiao, fen = divmod(cents, 10)
 
     # 大写金额保留「壹拾」写法（票据规范：壹拾贰元）；小写仍读「十二元」
@@ -139,7 +150,15 @@ def from_cn(text: str) -> int:
     value = 0        # 已完成的节累计
     section = 0      # 当前节内累计
     digit = -1       # 最近读到的数字（-1 表示尚未读数）
-    for ch in s:
+    i = 0
+    while i < len(s):
+        # 「万亿」必须先作为一个单位，避免被拆成「万」和「亿」。
+        if s.startswith("万亿", i):
+            value += (section + (digit if digit > 0 else 0)) * 10 ** 12
+            section, digit = 0, -1
+            i += 2
+            continue
+        ch = s[i]
         if ch in _CHAR_DIGIT:
             digit = _CHAR_DIGIT[ch]
         elif ch in _CHAR_UNIT:
@@ -151,6 +170,7 @@ def from_cn(text: str) -> int:
             section, digit = 0, -1
         else:
             raise ZhNumError(f"无法识别的字符 {ch!r}（原文：{text!r}）")
+        i += 1
     total = value + section + (digit if digit > 0 else 0)
     if not negative and total == 0 and any(c in _CHAR_UNIT or c in _CHAR_SECTION for c in s):
         pass  # 「零」之外的全零串按 0 处理

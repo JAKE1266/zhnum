@@ -5,7 +5,15 @@ import sys
 from . import __version__, from_cn, to_amount, to_cn, to_cn_capital
 
 
+def _configure_standard_streams() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
 def main(argv=None) -> int:
+    _configure_standard_streams()
     ap = argparse.ArgumentParser(prog="zhnum", description="中文数字转换工具")
     ap.add_argument("--version", action="version", version=f"zhnum {__version__}")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -14,7 +22,7 @@ def main(argv=None) -> int:
     sp = sub.add_parser("to-capital", help="数字 → 中文大写")
     sp.add_argument("n", type=int)
     sp = sub.add_parser("amount", help="金额 → 人民币大写")
-    sp.add_argument("x", type=float)
+    sp.add_argument("x")
     sp = sub.add_parser("from-cn", help="中文 → 数字")
     sp.add_argument("text")
     args = ap.parse_args(argv)

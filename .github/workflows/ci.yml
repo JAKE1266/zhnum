@@ -3,24 +3,54 @@ name: CI
 on:
   push:
     branches: [main, master]
+    tags: ["v*"]
   pull_request:
 
 jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build distributions
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zhnum-dist
+          path: dist/
+          if-no-files-found: error
+
   test:
-    name: 测试 (${{ matrix.os }}, Python ${{ matrix.python }})
-    runs-on: ${{ matrix.os }}
+    needs: build
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        python: ["3.9", "3.11", "3.13"]
+        os: [ubuntu-22.04, windows-latest, macos-15-intel]
+        python: ["3.8", "3.9", "3.11", "3.13"]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: 运行单元测试
-        env:
-          PYTHONIOENCODING: utf-8
-          PYTHONUTF8: "1"
-        run: python -m unittest discover -s tests -v
+      - uses: actions/download-artifact@v4
+        with:
+          name: zhnum-dist
+          path: ${{ github.workspace }}/dist
+      - name: Prepare external working directory
+        working-directory: ${{ github.workspace }}
+        run: python -c "import os; from pathlib import Path; (Path(os.environ['RUNNER_TEMP']) / 'zhnum-installed').mkdir(exist_ok=True)"
+      - name: Install wheel
+        working-directory: ${{ runner.temp }}/zhnum-installed
+        run: python -m pip install "${{ github.workspace }}/dist/zhnum-0.1.1-py3-none-any.whl"
+      - name: Smoke installed package
+        working-directory: ${{ runner.temp }}/zhnum-installed
+        run: python -c "import os, runpy; runpy.run_path(os.path.join(os.environ['GITHUB_WORKSPACE'], 'tests', 'smoke_installed.py'), run_name='__main__')"
+      - name: Run tests
+        working-directory: ${{ runner.temp }}/zhnum-installed
+        run: python -c "import os, unittest; suite = unittest.defaultTestLoader.discover(os.path.join(os.environ['GITHUB_WORKSPACE'], 'tests')); result = unittest.TextTestRunner(verbosity=2).run(suite); raise SystemExit(0 if result.wasSuccessful() else 1)"

@@ -1,4 +1,5 @@
 import unittest
+from decimal import Decimal
 
 from zhnum.core import ZhNumError, from_cn, to_amount, to_cn, to_cn_capital
 
@@ -29,6 +30,14 @@ class TestToCn(unittest.TestCase):
         for n in range(0, 20000, 7):
             self.assertEqual(from_cn(to_cn(n)), n, n)
 
+    def test_trillion_roundtrip(self):
+        self.assertEqual(to_cn(10 ** 12), "一万亿")
+        self.assertEqual(from_cn("一万亿"), 10 ** 12)
+        for n in (10 ** 12 - 1, 10 ** 12, 10 ** 12 + 1,
+                  1234567890123456, 10 ** 16 - 1):
+            with self.subTest(n=n):
+                self.assertEqual(from_cn(to_cn(n)), n)
+
 
 class TestCapital(unittest.TestCase):
     def test_basic(self):
@@ -40,6 +49,12 @@ class TestCapital(unittest.TestCase):
     def test_roundtrip(self):
         for n in range(0, 10000, 13):
             self.assertEqual(from_cn(to_cn_capital(n)), n, n)
+
+    def test_trillion_roundtrip(self):
+        for n in (10 ** 12 - 1, 10 ** 12, 10 ** 12 + 1,
+                  1234567890123456, 10 ** 16 - 1):
+            with self.subTest(n=n):
+                self.assertEqual(from_cn(to_cn_capital(n)), n)
 
 
 class TestAmount(unittest.TestCase):
@@ -62,6 +77,25 @@ class TestAmount(unittest.TestCase):
 
     def test_negative(self):
         self.assertEqual(to_amount(-3.5), "负叁元伍角整")
+
+    def test_decimal_half_up(self):
+        cases = [(2.675, "贰元陆角捌分"), ("2.675", "贰元陆角捌分"),
+                 (Decimal("1.005"), "壹元零壹分"), (-2.675, "负贰元陆角捌分")]
+        for value, want in cases:
+            with self.subTest(value=value):
+                self.assertEqual(to_amount(value), want)
+
+    def test_nonfinite_amounts(self):
+        for value in (float("inf"), float("-inf"), float("nan"), "NaN"):
+            with self.subTest(value=value):
+                with self.assertRaises(ZhNumError):
+                    to_amount(value)
+
+    def test_invalid_amounts(self):
+        for value in ("abc", "", None):
+            with self.subTest(value=value):
+                with self.assertRaises(ZhNumError):
+                    to_amount(value)
 
 
 class TestFromCn(unittest.TestCase):
@@ -90,7 +124,7 @@ class TestRoundtrip(unittest.TestCase):
         import random
         random.seed(2026)
         for _ in range(300):
-            n = random.randint(-10 ** 12, 10 ** 12)
+            n = random.randint(-(10 ** 16 - 1), 10 ** 16 - 1)
             self.assertEqual(from_cn(to_cn(n)), n, n)
             if n >= 0:
                 self.assertEqual(from_cn(to_cn_capital(n)), n, n)
