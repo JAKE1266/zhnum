@@ -7,7 +7,7 @@
 """
 from __future__ import annotations
 
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP, localcontext
 
 _DIGITS_CN = "零一二三四五六七八九"
 _DIGITS_CAP = "零壹贰叁肆伍陆柒捌玖"
@@ -105,10 +105,12 @@ def to_amount(amount, capital: bool = True) -> str:
         raise ZhNumError(f"无效金额：{amount!r}") from None
     if not amount.is_finite():
         raise ZhNumError("金额必须为有限数字")
-    try:
-        amount = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-    except InvalidOperation:
-        raise ZhNumError("金额超出可转换范围") from None
+    with localcontext() as context:
+        context.prec = max(28, amount.adjusted() + 3)
+        try:
+            amount = amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        except InvalidOperation:
+            raise ZhNumError("金额超出可转换范围") from None
     if amount < 0:
         return "负" + to_amount(-amount, capital)
     yuan = int(amount)

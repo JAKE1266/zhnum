@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.8%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Tests](https://img.shields.io/badge/tests-29%20passing-success)
+![Tests](https://img.shields.io/badge/tests-30%20passing-success)
 ![Dependencies](https://img.shields.io/badge/dependencies-0-brightgreen)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 
@@ -65,7 +65,7 @@ from_cn("壹亿零一")   # 100000001
 
 ```bash
 python -m unittest discover -s tests
-# Ran 29 tests ... OK
+# Ran 30 tests ... OK
 ```
 
 CI 会构建 wheel/sdist 并运行 `twine check`，再从仓库外目录安装真实 wheel，执行入口冒烟与全部测试；覆盖 Ubuntu/Windows/macOS × Python 3.8/3.9/3.11/3.13，共 13 个作业。

@@ -1,5 +1,5 @@
 import unittest
-from decimal import Decimal
+from decimal import Decimal, localcontext
 
 from zhnum.core import ZhNumError, from_cn, to_amount, to_cn, to_cn_capital
 
@@ -84,6 +84,12 @@ class TestAmount(unittest.TestCase):
         for value, want in cases:
             with self.subTest(value=value):
                 self.assertEqual(to_amount(value), want)
+
+    def test_low_precision_context(self):
+        with localcontext() as context:
+            context.prec = 6
+            self.assertEqual(to_amount("2.675"), "贰元陆角捌分")
+            self.assertEqual(context.prec, 6)
 
     def test_nonfinite_amounts(self):
         for value in (float("inf"), float("-inf"), float("nan"), "NaN"):
